@@ -1,62 +1,67 @@
-import { User } from 'lucide-react'
+import { api } from '@/lib/api'
+import dayjs from 'dayjs'
+import { cookies } from 'next/headers'
+import Image from 'next/image'
+import Link from 'next/link'
 
-export default function Home() {
+import { EmptyMemories } from '../components/EmptyMemories'
+import { ArrowRight } from 'lucide-react'
+
+interface MemoryInterface {
+  id: string
+  coverUrl: string
+  excerpt: string
+  createdAt: string
+}
+
+export default async function Home() {
+  const isAuthenticated = cookies().has('token')
+
+  if (!isAuthenticated) {
+    return <EmptyMemories />
+  }
+
+  const token = cookies().get('token')?.value
+  const response = await api.get('/memories', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+
+  const memories: MemoryInterface[] = response.data
+
+  if (memories.length === 0) {
+    return <EmptyMemories />
+  }
+
   return (
-    <main className="grid grid-cols-2 min-h-screen">
-      <div className="flex flex-col items-start justify-between px-28 py-56 relative overflow-hidden border-r border-white/10">
-        <div className="absolute right-0 top-1/2 h-[288px] w-[526px] bg-redspecial opacity-50 -translate-y-1/2 translate-x-1/2 rounded-full blur-full" />
+    <div className="flex flex-col gap-10 p-8">
+      {memories.map((memory) => {
+        return (
+          <div key={memory.id} className="space-y-4">
+            <time className="flex items-center gap-2 text-sm text-gray-100 -ml-8 before:h-px before:w-5 before:bg-gray-50">
+              {dayjs(memory.createdAt).format("MMMM[ ]D[, ]YYYY")}
+            </time>
 
-        <div className="absolute right-1 top-0 bottom-0 w-2 bg-stripes " />
+            <Image
+              src={memory.coverUrl}
+              width={592}
+              height={280}
+              className="aspect-video w-full object-cover rounded-lg"
+              alt="imagem"
+            />
 
-        <a href="" className="flex items-center gap-3 text-left hover:text-gray-50 transition-colors">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-400">
-            <User className="h-5 w-5 text-gray-500" />
-          </div>
-
-          <p className="text-sm leading-snug max-w-[160px]"> <span className="underline">Create your account</span> and save your memories!</p>
-        </a>
-
-        <div className="space-y-5">
-          <div className="flex flex-col justify-center">
-            <div className="flex items-center justify-center w-fit p-1 pr-3 pl-3 rounded-full bg-logo1 text-xl text-gray-900 text-bold font-alt"> MY </div>
-            <div className="flex items-center justify-center w-fit p-1 pr-3 pl-3 rounded-full bg-logo1 text-xl text-gray-900 text-bold font-alt"> WORMHOLE </div>
-          </div>
-
-          <div className="max-w-[420px] space-y-1">
-            <h1 className="text-4xl font-bold leading-tight text-gray-50">
-              Your Wormhole is here!
-            </h1>
-
-            <p className="text-lg leading-relaxed">
-              Collect remarkable moments of your journey and share them (if you want) with the world!
+            <p className="text-lg leading-relaxed text-gray-100">
+              {memory.excerpt}
             </p>
+
+            <Link href={`/memories/${memory.id}`} className="flex items-center gap-2 text-sm text-gray-200 hover:text-gray-100 transition-colors">
+              Read more
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-
-          <a href="" className="inline-block rounded-full bg-green-500 px-5 py-3 font-alt text-sm uppercase leading-none text-black hover:bg-green-600 transition-colors">
-            CREATE MEMORY
-          </a>
-        </div>
-
-        <div className="text-sm text-gray-200 leading-relaxed">
-            Made with 💜 @ NLW. Powered by{' '}
-            <a
-              href="https://rocketseat.com.br"
-              rel="noreferrer"
-              target="_blank"
-              className="underline hover:text-gray-100 transition-colors"
-            >
-              Rocketseat
-            </a>
-          </div>
-      </div>
-
-      <div className="flex flex-col p-16">
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-center leading-relaxed w-[360px]">
-            You haven't added any memory yet,{' '}<a href="" className="underline hover:text-gray-50">create now</a>!
-          </p>
-        </div>
-      </div>
-    </main>
+        )
+      })}
+    </div>
   )
 }
